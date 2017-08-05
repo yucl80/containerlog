@@ -1,19 +1,26 @@
-logstash-conf:
-    image: cmft/logstash-conf
-    volumes:
-      - /etc/hostname:/etc/hostname
-      - /var/run/docker.sock:/var/run/docker.sock
+version: '2'
+services:
+  logstash-conf:
+    image: registry.test.com:5000/logstash-conf:1.5
     environment:
-      - "DOCKERAPI_VERSION=1.24"
-      - "KAFKA_BOOTSTRAP_SERVERS=10.62.14.25:9092,10.62.14.31:9092,10.62.14.11:9092"
-    labels:
-      io.rancher.sidekicks: "logstash"
-logstash:
-    image: logstash:2
-    net: "container:logstash-conf"
-    volumes_from:
-      - logstash-conf
+      DOCKERAPI_VERSION: '1.24'
+      KAFKA_BOOTSTRAP_SERVERS: 10.62.14.25:9092,10.62.14.31:9092,10.62.14.11:9092
     volumes:
-      - /data/docker:/docker
-      - /var/log:/host/var/log
-    command: [bash, -c, "logstash -f /tmp/conf.d --auto-reload"]
+    - /etc/hostname:/etc/hostname
+    - /var/run/docker.sock:/var/run/docker.sock
+    labels:      
+      io.rancher.sidekicks: logstash
+      io.rancher.scheduler.global: 'true'
+      io.rancher.container.pull_image: always
+  logstash:
+    image: logstash:2.3
+    network_mode: container:logstash-conf
+    volumes:
+    - /data/docker:/docker
+    - /var/log:/host/var/log
+    volumes_from:
+    - logstash-conf
+    command:
+    - bash
+    - -c   
+    - echo '10.62.14.25 log-kafka-1' >> /etc/hosts; echo '10.62.14.31 log-kafka-2' >> /etc/hosts; echo '10.62.14.11 log-kafka-3' >> /etc/hosts; logstash -f /tmp/conf.d --auto-reload

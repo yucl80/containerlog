@@ -20,7 +20,7 @@ input {
         add_field => { "Name" => "{{ $v.Name }}" }
     }
     file {
-        path => "/docker/volumes/{{ $v.MountSource }}/*/*.acc"
+        path => ["/docker/volumes/{{ $v.MountSource }}/*/*.acc"]
         discover_interval => 120
         stat_interval => 1
         sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb"
@@ -43,7 +43,7 @@ input {
         add_field => { "Name" => "{{ $v.Name }}" }
     }{{ end }}
     file {
-        path => "/docker/containers/{{ $v.ID}}/*.log"
+        path => ["/docker/containers/{{ $v.ID}}/*.log"]
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 1

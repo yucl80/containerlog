@@ -69,8 +69,8 @@ filter {
       pattern => "^%{TIMESTAMP_ISO8601}"
       negate => "true"
       what => "previous"
-   }
-  
+     }
+  }
   mutate {
    remove_field => ["@version","@timestamp","tags"]
    remove_tag => ["multiline"]
@@ -121,6 +121,6 @@ output {
          message_key => "%{host}"
          batch_size => 200
        }
-     }
+   }
  }
 

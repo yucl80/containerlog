@@ -103,7 +103,7 @@ output {
   } else if [path] =~ "gc.log" {
         kafka {
           bootstrap_servers =>"{{ .BootstrapServers }}"
-          topic_id => "jvmgclog"
+          topic_id => "gclog"
           message_key => "%{host}"
           compression_type => "snappy"
         }

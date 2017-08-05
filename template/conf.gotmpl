@@ -6,13 +6,13 @@ input {
         stat_interval => 2
         sincedb_path => "/host/var/log/sincedb"
         exclude => "sincedb"
-    }{{ range $k, $v := . }}{{ if ne $v.MountSource "" }}
+    }{{ range $k, $v := .ContainerInfoMap }}{{ if ne $v.MountSource "" }}
     file {
         path => ["/docker/volumes/{{ $v.MountSource }}/*/common-all*.log"]
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 1
-        sincedb_path => "/docker/volumes/{{ $v.ID }}/sincedb"
+        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }
@@ -23,7 +23,7 @@ input {
         path => "/docker/volumes/{{ $v.MountSource }}/*/*.acc"
         discover_interval => 120
         stat_interval => 1
-        sincedb_path => "/logs/{{ $v.ID }}/sincedb"
+        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }
@@ -35,7 +35,7 @@ input {
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 1
-        sincedb_path => "/docker/volumes/{{ $v.ID }}/sincedb"
+        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }
@@ -59,7 +59,7 @@ input {
 filter {
   mutate {
     gsub => [
-      "path", "/logs/[^/]+/_data/rtlog/([^/]+)/", "/mwbase/applogs/rtlog/\1_%{stack}-%{service}-%{index}/"
+      "path", "/docker/volumes/[^/]+/_data/rtlog/([^/]+)/", "/mwbase/applogs/rtlog/\1_%{stack}-%{service}-%{index}/"
     ]
     add_field => { "containerHost" => "%{host}" }
     remove_field => [ "host" ]
@@ -69,14 +69,8 @@ filter {
       pattern => "^%{TIMESTAMP_ISO8601}"
       negate => "true"
       what => "previous"
-    }
-  } else if [path] =~ "BIAM" {
-      multiline {
-      pattern => "^\[%{MONTHNUM}/%{MONTHDAY} %{TIME}\]"
-      negate => "true"
-      what => "previous"
-     }
    }
+  
   mutate {
    remove_field => ["@version","@timestamp","tags"]
    remove_tag => ["multiline"]
@@ -86,7 +80,7 @@ filter {
 output {
   if [path] =~ "\.acc" {
     kafka {
-      bootstrap_servers =>"192.168.21.26:9092,192.168.21.27:9092,192.168.21.28:9092"
+      bootstrap_servers =>"{{ .BootstrapServers }}"
       topic_id =>"acclog"
       message_key => "%{host}"
       batch_size => 200
@@ -94,28 +88,35 @@ output {
     }
    } else  if [path] =~ "access" {
     kafka {
-      bootstrap_servers =>"192.168.21.26:9092,192.168.21.27:9092,192.168.21.28:9092"
+      bootstrap_servers =>"{{ .BootstrapServers }}"
       topic_id =>"acclog"
       message_key => "%{host}"
       batch_size => 200
     }
   } else if [path] =~ "common-all" {
     kafka {
-      bootstrap_servers =>"192.168.21.26:9092,192.168.21.27:9092,192.168.21.28:9092"
+      bootstrap_servers =>"{{ .BootstrapServers }}"
       topic_id => "applog"
       message_key => "%{host}"
       compression_type => "snappy"
     }
   } else if [path] =~ "host" {
     kafka {
-      bootstrap_servers =>"192.168.21.26:9092,192.168.21.27:9092,192.168.21.28:9092"
+      bootstrap_servers =>"{{ .BootstrapServers }}"
       topic_id => "hostsyslog"
       message_key => "%{host}"
       compression_type => "snappy"
     }
-  } else if [path] =~ "json.log" {
+  } else if [path] =~ "gc.log" {
+        kafka {
+          bootstrap_servers =>"{{ .BootstrapServers }}"
+          topic_id => "hostsyslog"
+          message_key => "%{host}"
+          compression_type => "snappy"
+        }
+  }else if [path] =~ "json.log" {
     kafka {
-      bootstrap_servers =>"192.168.21.26:9092,192.168.21.27:9092,192.168.21.28:9092"
+      bootstrap_servers =>"{{ .BootstrapServers }}"
       topic_id => "container"
       message_key => "%{host}"
       compression_type => "snappy"

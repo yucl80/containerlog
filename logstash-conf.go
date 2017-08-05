@@ -20,11 +20,12 @@ import (
 var (
 	tmpl string
 	host = ""
+	bootstrapServers = ""
 )
 
 const logBaseTag = "/mwbase/applogs"
 
-type ContainerBaseInfo struct {
+type ContainerInfo struct {
 	ID          string
 	MountSource string
 	Stack       string
@@ -35,11 +36,14 @@ type ContainerBaseInfo struct {
 }
 
 type ContainerChangeEvent struct {
-	Info   map[string]*ContainerBaseInfo
+	Info   map[string]*ContainerInfo
 	action string
 }
 
-
+type TemplateVars struct {
+	ContainerInfoMap map[string]*ContainerInfo
+	BootstrapServers string
+}
 
 func init() {
 	b, _ := ioutil.ReadFile("/etc/hostname")
@@ -51,6 +55,10 @@ func init() {
 
 func main() {
 	initSysSignal()
+	bootstrapServers = os.Getenv("KafkaBootstrapServers")
+	if bootstrapServers == "" {
+		fmt.Printf("kafka bootstrap server is empty,please set env KafkaBootstrapServers \n")
+	}
 	c := make(chan ContainerChangeEvent, 1)
 	go CreateConfig(c)
 	watchContainer(c)
@@ -81,9 +89,9 @@ func watchContainer(c chan<- ContainerChangeEvent) {
 		}
 
 	}
-	cci := make(map[string]*ContainerBaseInfo)
+	cci := make(map[string]*ContainerInfo)
 	for _, container := range containers {
-		containerInfo, _ := getContainerBaseInfo(cli, container.ID)
+		containerInfo, _ := getContainerInfo(cli, container.ID)
 		cci[containerInfo.ID] = containerInfo
 	}
 
@@ -111,17 +119,17 @@ loop:
 		case e := <-messages:
 			fmt.Printf("%s\n", e)
 			if e.Action == "create" {
-				containerInfo, _ := getContainerBaseInfo(cli, e.ID)
+				containerInfo, _ := getContainerInfo(cli, e.ID)
 				fmt.Printf("%s\n", containerInfo)
 				c <- ContainerChangeEvent{
 					action: "create",
-					Info:   map[string]*ContainerBaseInfo{e.ID: containerInfo},
+					Info:   map[string]*ContainerInfo{e.ID: containerInfo},
 				}
 			} else if e.Action == "destroy" {
 				fmt.Printf("%s %s\n", e.ID, "destroy")
 				c <- ContainerChangeEvent{
 					action: "destroy",
-					Info:   map[string]*ContainerBaseInfo{e.ID: nil},
+					Info:   map[string]*ContainerInfo{e.ID: nil},
 				}
 			}
 
@@ -134,16 +142,14 @@ loop:
 
 
 
-func getContainerBaseInfo(cli *client.Client, containerID string) (*ContainerBaseInfo, error) {
+func getContainerInfo(cli *client.Client, containerID string) (*ContainerInfo, error) {
 	json, _ := cli.ContainerInspect(context.Background(), containerID)
 	var logbase string
 	for _, mount := range json.Mounts {
 		if mount.Destination == logBaseTag {
-			logbase = mount.Source
-			p1 := filepath.Dir(logbase)
+			p1 := filepath.Dir(mount.Source)
 			p1 = filepath.Dir(p1)
-			source, _:= filepath.Rel(p1, logbase)
-			fmt.Printf("%s\n",source)
+			logbase, _= filepath.Rel(p1, mount.Source)
 			break
 		}
 	}
@@ -156,7 +162,7 @@ func getContainerBaseInfo(cli *client.Client, containerID string) (*ContainerBas
 	name := json.ContainerJSONBase.Name[1:]
 
 
-	return &ContainerBaseInfo{
+	return &ContainerInfo{
 		ID:          containerID,
 		MountSource: logbase,
 		Stack:       stackName,
@@ -174,7 +180,7 @@ func CreateConfig(c <-chan ContainerChangeEvent) {
 	if err := getTmplFromFile(); err != nil {
 		fmt.Printf("get tmple from file failed: %s\n",err.Error())
 	}
-	cl := make(map[string]*ContainerBaseInfo)
+	cl := make(map[string]*ContainerInfo)
 
 	for {
 		select {
@@ -210,7 +216,7 @@ func getTmplFromFile() error {
 	return nil
 }
 
-func createConfig(cl map[string]*ContainerBaseInfo) {
+func createConfig(cl map[string]*ContainerInfo) {
 	filename := "/tmp/conf.d/logstash.conf"
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0755)
 	if err != nil {
@@ -220,7 +226,11 @@ func createConfig(cl map[string]*ContainerBaseInfo) {
 	defer file.Close()
 
 	t := template.Must(template.New("log").Parse(tmpl))
-	err = t.Execute(file, cl)
+	vars := TemplateVars {
+		ContainerInfoMap:cl,
+		BootstrapServers:bootstrapServers,
+	}
+	err = t.Execute(file, vars)
 	if err != nil {
 		fmt.Printf("create logstash conf failed: %s\n",err)
 	} else {

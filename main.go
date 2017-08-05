@@ -31,7 +31,6 @@ type ContainerBaseInfo struct {
 	Service     string
 	Index       string
 	Host        string
-	Stdout      string
 	Name        string
 	ContainerPath string
 }
@@ -149,14 +148,12 @@ func getContainerBaseInfo(cli *client.Client, containerID string) (*ContainerBas
 			break
 		}
 	}
-	stdout := json.ContainerJSONBase.LogPath
 	var stackName, serviceName, index string
 	stackName = json.Config.Labels["io.rancher.stack.name"]
 	if stackName != "" {
 		serviceName = json.Config.Labels["io.rancher.stack_service.name"][len(stackName)+2:]
 		index = json.Config.Labels["io.rancher.container.name"][len(stackName)+len(serviceName)+3:]
 	}
-	containerPath := stdout[0:strings.LastIndex(stdout,"/")]
 	name := json.ContainerJSONBase.Name[1:]
 
 
@@ -167,9 +164,7 @@ func getContainerBaseInfo(cli *client.Client, containerID string) (*ContainerBas
 		Service:     serviceName,
 		Index:       index,
 		Host:        host,
-		Stdout:      stdout,
 		Name:        name,
-		ContainerPath: containerPath,
 	}, nil
 
 }

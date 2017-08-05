@@ -1,0 +1,18 @@
+logstash-conf:
+    image: cmft/logstash-conf
+    volumes:
+      - /etc/hostname:/etc/hostname
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - "DOCKERAPI_VERSION=1.24"
+    labels:
+      io.rancher.sidekicks: "logstash"
+logstash:
+    image: logstash:2
+    net: "service:logstash-conf"
+    volumes_from:
+      - wise-logger
+    volumes:
+      - /data/docker:/docker
+      - /var/log:/host/var/log
+    command: [bash, -c, "logstash -f /tmp/conf.d --auto-reload"]

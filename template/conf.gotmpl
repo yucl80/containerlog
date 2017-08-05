@@ -86,14 +86,7 @@ output {
       batch_size => 200
       client_id => [host]
     }
-   } else  if [path] =~ "access" {
-    kafka {
-      bootstrap_servers =>"{{ .BootstrapServers }}"
-      topic_id =>"acclog"
-      message_key => "%{host}"
-      batch_size => 200
-    }
-  } else if [path] =~ "common-all" {
+   } else if [path] =~ "common-all" {
     kafka {
       bootstrap_servers =>"{{ .BootstrapServers }}"
       topic_id => "applog"
@@ -110,17 +103,24 @@ output {
   } else if [path] =~ "gc.log" {
         kafka {
           bootstrap_servers =>"{{ .BootstrapServers }}"
-          topic_id => "hostsyslog"
+          topic_id => "jvmgc"
           message_key => "%{host}"
           compression_type => "snappy"
         }
-  }else if [path] =~ "json.log" {
+  } else if [path] =~ "json.log" {
     kafka {
       bootstrap_servers =>"{{ .BootstrapServers }}"
       topic_id => "container"
       message_key => "%{host}"
       compression_type => "snappy"
     }
-  }
+  } else  if [path] =~ "access" {
+       kafka {
+         bootstrap_servers =>"{{ .BootstrapServers }}"
+         topic_id =>"acclog"
+         message_key => "%{host}"
+         batch_size => 200
+       }
+     }
  }
 

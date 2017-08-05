@@ -32,7 +32,6 @@ type ContainerBaseInfo struct {
 	Index       string
 	Host        string
 	Name        string
-	ContainerPath string
 }
 
 type ContainerChangeEvent struct {

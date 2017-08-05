@@ -35,7 +35,7 @@ input {
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 1
-        sincedb_path => "/docker/volumes/{{ $v.ContainerPath }}/sincedb"
+        sincedb_path => "/docker/volumes/{{ $v.ID }}/sincedb"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }

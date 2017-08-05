@@ -55,9 +55,9 @@ func init() {
 
 func main() {
 	initSysSignal()
-	bootstrapServers = os.Getenv("KafkaBootstrapServers")
+	bootstrapServers = os.Getenv("KAFKA_BOOTSTRAP_SERVERS")
 	if bootstrapServers == "" {
-		fmt.Printf("kafka bootstrap server is empty,please set env KafkaBootstrapServers \n")
+		fmt.Printf("kafka bootstrap server is empty,please set env KAFKA_BOOTSTRAP_SERVERS \n")
 	}
 	c := make(chan ContainerChangeEvent, 1)
 	go CreateConfig(c)

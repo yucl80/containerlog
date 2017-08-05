@@ -5,13 +5,14 @@ logstash-conf:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - "DOCKERAPI_VERSION=1.24"
+      - "KAFKA_BOOTSTRAP_SERVERS=10.62.14.25:9092,10.62.14.31:9092,10.62.14.11:9092"
     labels:
       io.rancher.sidekicks: "logstash"
 logstash:
     image: logstash:2
-    net: "service:logstash-conf"
+    net: "container:logstash-conf"
     volumes_from:
-      - wise-logger
+      - logstash-conf
     volumes:
       - /data/docker:/docker
       - /var/log:/host/var/log

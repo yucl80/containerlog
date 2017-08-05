@@ -4,15 +4,15 @@ input {
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 2
-        sincedb_path => "/host/var/log/sincedb"
+        sincedb_path => "/host/var/log/sincedb1"
         exclude => "sincedb"
     }{{ range $k, $v := .ContainerInfoMap }}{{ if ne $v.MountSource "" }}
     file {
-        path => ["/docker/volumes/{{ $v.MountSource }}/*/common-all*.log"]
+        path => ["/docker/volumes/{{ $v.MountSource }}/rtlog/*/common-all*.log"]
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 1
-        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb"
+        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb2"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }
@@ -20,10 +20,10 @@ input {
         add_field => { "Name" => "{{ $v.Name }}" }
     }
     file {
-        path => ["/docker/volumes/{{ $v.MountSource }}/*/*.acc"]
+        path => ["/docker/volumes/{{ $v.MountSource }}/rtlog/*/*.acc"]
         discover_interval => 120
         stat_interval => 1
-        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb"
+        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb3"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }
@@ -31,11 +31,11 @@ input {
         add_field => { "Name" => "{{ $v.Name }}" }
     }
     file {
-        path => ["/docker/volumes/{{ $v.ID }}/*/gc.log"]
+        path => ["/docker/volumes/{{ $v.ID }}/rtlog/*/gc.log"]
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 1
-        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb"
+        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb4"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }
@@ -47,7 +47,7 @@ input {
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 1
-        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb"
+        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb5"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }

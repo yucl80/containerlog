@@ -156,8 +156,8 @@ func getContainerInfo(cli *client.Client, containerID string) (*ContainerInfo, e
 	var stackName, serviceName, index string
 	stackName = json.Config.Labels["io.rancher.stack.name"]
 	if stackName != "" {
-		serviceName = json.Config.Labels["io.rancher.stack_service.name"][len(stackName)+2:]
-		index = json.Config.Labels["io.rancher.container.name"][len(stackName)+len(serviceName)+3:]
+		serviceName = json.Config.Labels["io.rancher.stack_service.name"][len(stackName)+1:]
+		index = json.Config.Labels["io.rancher.container.name"][len(stackName)+len(serviceName)+2:]
 	}
 	name := json.ContainerJSONBase.Name[1:]
 

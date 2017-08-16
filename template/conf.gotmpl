@@ -4,11 +4,11 @@ input {
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 2
-        sincedb_path => "/host/var/log/sincedb1"
+        sincedb_path => "/host/var/log/sincedb"
         exclude => "sincedb"
     }{{ range $k, $v := .ContainerInfoMap }}{{ if ne $v.MountSource "" }}
     file {
-        path => ["/docker/volumes/{{ $v.MountSource }}/rtlog/*/common-all*.log"]
+        path => ["/docker/volumes/{{ $v.MountSource }}/rtlog/*/common-all*.log","/docker/volumes/{{ $v.MountSource }}/rtlog/*/*.acc","/docker/volumes/{{ $v.ID }}/rtlog/*/gc.log"]
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 1
@@ -16,42 +16,19 @@ input {
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }
-        add_field => { "HOST" => "{{ $v.Host }}" }
+        add_field => { "hostName" => "{{ $v.Host }}" }
         add_field => { "Name" => "{{ $v.Name }}" }
-    }
+    }{{ end }}
     file {
-        path => ["/docker/volumes/{{ $v.MountSource }}/rtlog/*/*.acc"]
+        path => "/docker/containers/{{ $v.ID}}/*.log"
+        codec => plain { charset => "UTF-8" }
         discover_interval => 120
         stat_interval => 1
         sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb3"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }
-        add_field => { "HOST" => "{{ $v.Host }}" }
-        add_field => { "Name" => "{{ $v.Name }}" }
-    }
-    file {
-        path => ["/docker/volumes/{{ $v.ID }}/rtlog/*/gc.log"]
-        codec => plain { charset => "GBK" }
-        discover_interval => 120
-        stat_interval => 1
-        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb4"
-        add_field => { "stack" => "{{ $v.Stack }}" }
-        add_field => { "service" => "{{ $v.Service }}" }
-        add_field => { "index" => "{{ $v.Index}}" }
-        add_field => { "HOST" => "{{ $v.Host }}" }
-        add_field => { "Name" => "{{ $v.Name }}" }
-    }{{ end }}
-    file {
-        path => ["/docker/containers/{{ $v.ID}}/*.log"]
-        codec => plain { charset => "GBK" }
-        discover_interval => 120
-        stat_interval => 1
-        sincedb_path => "/docker/containers/{{ $v.ID }}/sincedb5"
-        add_field => { "stack" => "{{ $v.Stack }}" }
-        add_field => { "service" => "{{ $v.Service }}" }
-        add_field => { "index" => "{{ $v.Index}}" }
-        add_field => { "HOST" => "{{ $v.Host }}" }
+        add_field => { "hostName" => "{{ $v.Host }}" }
         add_field => { "Name" => "{{ $v.Name }}" }
     }{{ end }}
 }
@@ -61,8 +38,8 @@ filter {
     gsub => [
       "path", "/docker/volumes/[^/]+/_data/rtlog/([^/]+)/", "/mwbase/applogs/rtlog/\1_%{stack}-%{service}-%{index}/"
     ]
-    add_field => { "containerHost" => "%{host}" }
-    remove_field => [ "host" ]
+    update => { "host" => "%{hostName}" }
+    remove_field => [ "hostName" ]
   }
   if [path] =~ "common-all" {
      multiline {
@@ -123,4 +100,3 @@ output {
        }
    }
  }
-

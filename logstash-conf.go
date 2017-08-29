@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"os/signal"
 	"path/filepath"
+	"time"
 )
 
 var (
@@ -131,12 +132,20 @@ loop:
 					action: "destroy",
 					Info:   map[string]*ContainerInfo{e.ID: nil},
 				}
+				go removeContainerSincedb(e.ID)
 			}
 
 
 
 		}
 	}
+
+}
+
+func removeContainerSincedb(containerID string) {
+	time.Sleep(300*time.Second)
+	os.Remove("/logstash/"+containerID+".sincedb")
+	os.Remove("/logstash/"+containerID+".sincedb2")
 
 }
 

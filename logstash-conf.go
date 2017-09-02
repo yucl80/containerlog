@@ -22,6 +22,8 @@ var (
 	tmpl string
 	host = ""
 	bootstrapServers = ""
+	sincedbRoot = "/logstash"
+	ignoreOlder = "172800"
 )
 
 const logBaseTag = "/mwbase/applogs"
@@ -32,7 +34,6 @@ type ContainerInfo struct {
 	Stack       string
 	Service     string
 	Index       string
-	Host        string
 	Name        string
 }
 
@@ -44,6 +45,10 @@ type ContainerChangeEvent struct {
 type TemplateVars struct {
 	ContainerInfoMap map[string]*ContainerInfo
 	BootstrapServers string
+	Host string
+	SincedbRoot string
+	IgnoreOlder string
+
 }
 
 func init() {
@@ -56,9 +61,22 @@ func init() {
 
 func main() {
 	initSysSignal()
+	cleanSincedb := os.Getenv("CLEAN_ALL_SINCEDB")
+	if cleanSincedb == "true" {
+		fmt.Printf("clean all sincedb data \n")
+		removeAllSincedb()
+	}
 	bootstrapServers = os.Getenv("KAFKA_BOOTSTRAP_SERVERS")
 	if bootstrapServers == "" {
 		fmt.Printf("kafka bootstrap server is empty,please set env KAFKA_BOOTSTRAP_SERVERS \n")
+	}
+	v_sincedbRoot := os.Getenv("LOGSTASH_SINCEDB_ROOT")
+	if v_sincedbRoot != "" {
+		sincedbRoot = v_sincedbRoot
+	}
+	v_ignoreOlder := os.Getenv("LOGSTASH_IGNORE_OLDER")
+	if v_ignoreOlder != "" {
+		ignoreOlder =  v_ignoreOlder
 	}
 	c := make(chan ContainerChangeEvent, 1)
 	go CreateConfig(c)
@@ -135,8 +153,6 @@ loop:
 				go removeContainerSincedb(e.ID)
 			}
 
-
-
 		}
 	}
 
@@ -144,11 +160,18 @@ loop:
 
 func removeContainerSincedb(containerID string) {
 	time.Sleep(300*time.Second)
-	os.Remove("/logstash/"+containerID+".sincedb")
-	os.Remove("/logstash/"+containerID+".sincedb2")
-
+	files, _ := filepath.Glob(sincedbRoot+"/"+containerID+".*")
+	for _,file :=range files {
+		os.Remove(file)
+	}
 }
 
+func removeAllSincedb()  {
+	files, _ := filepath.Glob(sincedbRoot+"/*.*")
+	for _,file :=range files {
+		os.Remove(file)
+	}
+}
 
 
 func getContainerInfo(cli *client.Client, containerID string) (*ContainerInfo, error) {
@@ -177,7 +200,6 @@ func getContainerInfo(cli *client.Client, containerID string) (*ContainerInfo, e
 		Stack:       stackName,
 		Service:     serviceName,
 		Index:       index,
-		Host:        host,
 		Name:        name,
 	}, nil
 
@@ -238,6 +260,10 @@ func createConfig(cl map[string]*ContainerInfo) {
 	vars := TemplateVars {
 		ContainerInfoMap:cl,
 		BootstrapServers:bootstrapServers,
+		Host:host,
+		SincedbRoot:sincedbRoot,
+		IgnoreOlder:ignoreOlder,
+
 	}
 	err = t.Execute(file, vars)
 	if err != nil {

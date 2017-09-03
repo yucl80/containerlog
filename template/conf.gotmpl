@@ -4,18 +4,19 @@ input {
         codec => plain { charset => "GBK" }
         discover_interval => 120
         stat_interval => 2
-        sincedb_path => "/logstash/host.sincedb"
-        ignore_older => 172800
+        sincedb_path => "{{.SincedbRoot}}/host.sincedb"
+        ignore_older => {{.IgnoreOlder}}
         start_position => "beginning"
         exclude => "sincedb"
-    }{{ range $k, $v := .ContainerInfoMap }}{{ if ne $v.MountSource "" }}
+    }{{  $sincedbRoot := .SincedbRoot}}{{ $ignoreOlder := .IgnoreOlder }}
+    {{ range $k, $v := .ContainerInfoMap }}{{ if ne $v.MountSource "" }}
     file {
         path => ["/docker/volumes/{{ $v.MountSource }}/rtlog/*/*.acc","/docker/volumes/{{ $v.MountSource }}/rtlog/*/gc.log*"]
         codec => plain { charset => "GBK" }
         discover_interval => 30
         stat_interval => 1
-        sincedb_path => "/logstash/{{$v.ID}}.sincedb1"
-        ignore_older => 172800
+        sincedb_path => "{{ $sincedbRoot}}/{{$v.ID}}.sincedb1"
+        ignore_older => {{$ignoreOlder}}
         start_position => "beginning"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
@@ -26,8 +27,8 @@ input {
         path => ["/docker/volumes/{{ $v.MountSource }}/rtlog/*/common-all.log*"]
         discover_interval => 30
         stat_interval => 1
-        sincedb_path => "/logstash/{{$v.ID}}.sincedb2"
-        ignore_older => 172800
+        sincedb_path => "{{ $sincedbRoot}}/{{$v.ID}}.sincedb2"
+        ignore_older => {{$ignoreOlder}}
         start_position => "beginning"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
@@ -44,19 +45,13 @@ input {
         path => "/docker/containers/{{ $v.ID}}/*.log"
         discover_interval => 30
         stat_interval => 1
-        sincedb_path => "/logstash/{{$v.ID}}.sincedb3"
-        ignore_older => 172800
+        sincedb_path => "{{ $sincedbRoot}}/{{$v.ID}}.sincedb3"
+        ignore_older => {{$ignoreOlder}}
         start_position => "beginning"
         add_field => { "stack" => "{{ $v.Stack }}" }
         add_field => { "service" => "{{ $v.Service }}" }
         add_field => { "index" => "{{ $v.Index}}" }
         add_field => { "name" => "{{ $v.Name }}" }
-        codec => multiline {
-          pattern => "^%{TIMESTAMP_ISO8601} "
-          negate => true
-          charset => "UTF-8"
-          what => "previous"
-        }
     }{{ end }}
 }
 

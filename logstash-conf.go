@@ -61,18 +61,19 @@ func init() {
 
 func main() {
 	initSysSignal()
+	v_sincedbRoot := os.Getenv("LOGSTASH_SINCEDB_ROOT")
+	if v_sincedbRoot != "" && v_sincedbRoot != "/" {
+		sincedbRoot = v_sincedbRoot
+	}
 	cleanSincedb := os.Getenv("CLEAN_ALL_SINCEDB")
 	if cleanSincedb == "true" {
 		fmt.Printf("clean all sincedb data \n")
 		removeAllSincedb()
+		return
 	}
 	bootstrapServers = os.Getenv("KAFKA_BOOTSTRAP_SERVERS")
 	if bootstrapServers == "" {
 		fmt.Printf("kafka bootstrap server is empty,please set env KAFKA_BOOTSTRAP_SERVERS \n")
-	}
-	v_sincedbRoot := os.Getenv("LOGSTASH_SINCEDB_ROOT")
-	if v_sincedbRoot != "" {
-		sincedbRoot = v_sincedbRoot
 	}
 	v_ignoreOlder := os.Getenv("LOGSTASH_IGNORE_OLDER")
 	if v_ignoreOlder != "" {

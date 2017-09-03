@@ -1,19 +1,20 @@
 version: '2'
 services:
   logstash-conf:
-    image: registry.test.com:5000/logstash-conf:1.5
+    image: logstash-conf:5.0
     environment:
-      DOCKERAPI_VERSION: '1.24'
-      KAFKA_BOOTSTRAP_SERVERS: 10.62.14.25:9092,10.62.14.31:9092,10.62.14.11:9092
+      DOCKER_API_VERSION: '1.24'
+      KAFKA_BOOTSTRAP_SERVERS: localhost:9092
     volumes:
     - /etc/hostname:/etc/hostname
     - /var/run/docker.sock:/var/run/docker.sock
-    labels:      
+    - /data/logstash:/logstash
+    labels:
       io.rancher.sidekicks: logstash
-      io.rancher.scheduler.global: 'true'
       io.rancher.container.pull_image: always
+      io.rancher.scheduler.global: 'true'
   logstash:
-    image: logstash:2.3
+    image: logstash:5.5.2
     network_mode: container:logstash-conf
     volumes:
     - /data/docker:/docker
@@ -22,5 +23,5 @@ services:
     - logstash-conf
     command:
     - bash
-    - -c   
-    - echo '10.62.14.25 log-kafka-1' >> /etc/hosts; echo '10.62.14.31 log-kafka-2' >> /etc/hosts; echo '10.62.14.11 log-kafka-3' >> /etc/hosts; logstash -f /tmp/conf.d --auto-reload
+    - -c
+    - logstash -f /tmp/conf.d -r

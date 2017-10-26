@@ -149,8 +149,9 @@ loop:
 				fmt.Printf("%s %s\n", e.ID, "destroy")
 				c <- ContainerChangeEvent{
 					action: "destroy",
-					Info:   map[string]*ContainerInfo{e.ID: nil},
+					Info:   map[string]*ContainerInfo{e.ID:nil},
 				}
+				fmt.Printf("test *******")
 				go removeContainerSincedb(e.ID)
 			}
 
@@ -221,8 +222,8 @@ func CreateConfig(c <-chan ContainerChangeEvent) {
 				for k, v := range ci.Info {
 					cl[k] = v
 				}
-			} else if ci.action == "destory" {
-				for k := range ci.Info {
+			} else if ci.action == "destroy" {
+				for k,_:= range ci.Info {
 					delete(cl, k)
 				}
 			}

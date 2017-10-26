@@ -151,7 +151,6 @@ loop:
 					action: "destroy",
 					Info:   map[string]*ContainerInfo{e.ID:nil},
 				}
-				fmt.Printf("test *******")
 				go removeContainerSincedb(e.ID)
 			}
 
